@@ -1,15 +1,19 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 
-const uploadDirectory = path.join(__dirname, '../uploads/resumes');
-if (!fs.existsSync(uploadDirectory)) {
-  fs.mkdirSync(uploadDirectory, { recursive: true });
+const baseUploadDir = process.env.VERCEL
+  ? path.join(os.tmpdir(), 'uploads', 'resumes')
+  : path.join(__dirname, '../uploads/resumes');
+
+if (!fs.existsSync(baseUploadDir)) {
+  fs.mkdirSync(baseUploadDir, { recursive: true });
 }
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, uploadDirectory);
+    cb(null, baseUploadDir);
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -27,11 +31,11 @@ const fileFilter = (req, file, cb) => {
 };
 
 const uploadResume = multer({
-  storage: storage,
+  storage,
   limits: {
-    fileSize: parseInt(process.env.MAX_FILE_SIZE, 10) || 5 * 1024 * 1024, // 5MB limit
+    fileSize: parseInt(process.env.MAX_FILE_SIZE, 10) || 5 * 1024 * 1024,
   },
-  fileFilter: fileFilter,
+  fileFilter,
 });
 
 module.exports = { uploadResume };
